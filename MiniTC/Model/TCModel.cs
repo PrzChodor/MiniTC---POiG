@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
@@ -27,24 +28,33 @@ namespace MiniTC.Model
 
         public void DirectoryChanged(string path,int panel)
         {
+            string lastPath = CurrentPath[panel];
             CurrentPath[panel] = path;
             Directories[panel] = new List<string>();
 
             if (CurrentPath[panel].Substring(Path.GetPathRoot(CurrentPath[panel]).Length).Length != 0)
                 Directories[panel].Add("..");
 
-            foreach (var d in Directory.GetDirectories(CurrentPath[panel]))
+            try
             {
-                var dirName = new DirectoryInfo(d).Name;
-                Directories[panel].Add("<D>" + dirName);
+                foreach (var d in Directory.GetDirectories(CurrentPath[panel]))
+                {
+                    var dirName = new DirectoryInfo(d).Name;
+                    Directories[panel].Add("<D>" + dirName);
+                }
+
+                Files[panel] = new List<string>();
+
+                foreach (var f in Directory.GetFiles(CurrentPath[panel]))
+                {
+                    var fileName = new FileInfo(f).Name;
+                    Directories[panel].Add(fileName);
+                }
             }
-
-            Files[panel] = new List<string>();
-
-            foreach (var f in Directory.GetFiles(CurrentPath[panel]))
+            catch (UnauthorizedAccessException error)
             {
-                var fileName = new FileInfo(f).Name;
-                Directories[panel].Add(fileName);
+                MessageBox.Show(error.Message + lastPath);
+                DirectoryChanged(lastPath, panel);
             }
         }
 
@@ -59,7 +69,11 @@ namespace MiniTC.Model
                     {
                         File.Copy(source, destination, true);
                     }
-                    catch (FileNotFoundException error)
+                    catch (IOException error)
+                    {
+                        MessageBox.Show(error.Message);
+                    }
+                    catch (UnauthorizedAccessException error)
                     {
                         MessageBox.Show(error.Message);
                     }
@@ -71,7 +85,11 @@ namespace MiniTC.Model
                 {
                     File.Copy(source, destination);
                 }
-                catch (FileNotFoundException error)
+                catch (IOException error)
+                {
+                    MessageBox.Show(error.Message);
+                }
+                catch (UnauthorizedAccessException error)
                 {
                     MessageBox.Show(error.Message);
                 }
